@@ -52,12 +52,14 @@ Tower/
 │   ├── buy.py                                    # trading_problem_3: buy 100kg cheapest
 │   └── trade.py                                  # trading_problem_4: arbitrage
 ├── problem-5/                                    # limit-order buying
+│   ├── pipeline.py                               # compute σ + backtest
 │   ├── trade.py                                  # trading_problem_5: optimal bidding (classification inlined)
-│   ├── compute_sigma.py                          # LOO cross-validation for per-column σ
+│   ├── compute_sigma.py                          # standalone σ computation (also available via pipeline)
 │   └── intermediates/
 │       └── sigma.json                            # precomputed per-column σ values
 ├── compact.py                                    # notebook generator
-└── problem_set.ipynb                             # submission notebook
+├── limestone_data_challenge_2026.ipynb           # submission notebook (generated)
+└── requirements.txt                              # Python dependencies
 ```
 
 ## Results
@@ -142,7 +144,7 @@ Buy all 100kg from the single cheapest predicted NaN column.
 ### Prerequisites
 
 ```bash
-pip install numpy pandas scipy torch
+pip install -r requirements.txt
 ```
 
 ### Step 1: Run the full pipeline (Problems 1 & 2)
@@ -156,18 +158,26 @@ This generates:
 - `answers/problem1a_answer.csv` — column classifications
 - `answers/problem1b_answer.csv` — decomposition coefficients
 - `answers/problem2_answer.csv` — completed matrix
-- `problem-1_2/intermediates/coefficients.json` — cached decompositions
+- `problem-1_2/intermediates/candidates.json` — detected index/farmer lists
+- `problem-1_2/intermediates/coefficients.json` — raw decomposition weights (pre-EM)
+- `problem-1_2/intermediates/em_coefficients.json` — refined weights (post-EM)
+- `problem-1_2/intermediates/matrix.json` — SVD rank + obs RMSE
+- `problem-1_2/analysis/*.png` — diagnostic plots
 
 Runtime: ~2–5 minutes depending on hardware.
 
-### Step 2: Compute per-column σ (Problem 5 prerequisite)
+### Step 2: Run Problem 5 pipeline
 
 ```bash
 cd problem-5
-python3 compute_sigma.py
+python3 pipeline.py                  # compute σ in memory, run backtest
+python3 pipeline.py --intermediates  # also save intermediates/sigma.json
 ```
 
-Generates `problem-5/intermediates/sigma.json`. Runtime: ~10 seconds.
+Without `--intermediates`: computes σ, builds cache, runs backtest — nothing written to disk.
+With `--intermediates`: also saves `problem-5/intermediates/sigma.json` for standalone `trade.py` use.
+
+Runtime: ~15 seconds.
 
 ### Step 3: Test trading strategies
 
@@ -188,7 +198,7 @@ python3 trade.py
 
 ```bash
 cd problem-1_2 && python3 pipeline.py --intermediates
-cd ../problem-5 && python3 compute_sigma.py
+cd ../problem-5 && python3 pipeline.py --intermediates
 cd ../problem-3_4 && python3 buy.py && python3 trade.py
 cd ../problem-5 && python3 trade.py
 ```
@@ -199,7 +209,7 @@ cd ../problem-5 && python3 trade.py
 python3 compact.py
 ```
 
-Produces `problem_set.ipynb`.
+Produces `limestone_data_challenge_2026.ipynb`.
 
 ## Key Dependencies
 

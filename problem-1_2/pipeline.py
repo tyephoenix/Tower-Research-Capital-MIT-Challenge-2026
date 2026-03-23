@@ -143,6 +143,10 @@ def main():
         arr, vmask, best_rank, warm_start=warm)
     print(f"  SVD obs RMSE={obs_rmse:.6f}")
 
+    if args.intermediates:
+        from matrix import save_matrix_result
+        save_matrix_result(decompositions, best_rank, obs_rmse, [], cols)
+
     # ── Phase 4: EM loop ──────────────────────────────────────────────────
     em_history = {c: [verify_rmse(c, cols, decompositions, data)]
                   for c in accepted_cols} if args.intermediates else None

@@ -28,7 +28,7 @@ for problem_dir in sorted(glob.glob("problem-*")):
         nb.cells.append(nbformat.v4.new_markdown_cell(f"### `{fname}`"))
         nb.cells.append(nbformat.v4.new_code_cell(code))
 
-with open("problem_set.ipynb", "w") as f:
+with open("limestone_data_challenge_2026.ipynb", "w") as f:
     nbformat.write(nb, f)
 
 print(f"Created problem_set.ipynb")
