@@ -66,7 +66,7 @@ Tower/
 
 | Problem | Metric | Value |
 |---------|--------|-------|
-| **1a** | Indices detected | 6/6 correct (col_11, col_30, col_42, col_46, col_48, col_50) |
+| **1a** | Indices detected | 6 identified (col_11, col_30, col_42, col_46, col_48, col_50) |
 | **1b** | Coefficient sum | 1.0000 for all 6 indices |
 | **1b** | Verify RMSE (co-observed) | < 0.01 for proven indices |
 | **2** | SVD obs RMSE | 0.0181 (rank 47) |
