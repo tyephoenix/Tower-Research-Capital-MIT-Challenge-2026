@@ -72,11 +72,9 @@ Tower/
 | **3** | Out-of-time cost/oracle | 106,095 / 100,927 — **5.1% above oracle** (7 synthetic rows) |
 | **4** | Profit vs oracle (3650 rows) | 5,064,153 / 5,064,153 — **100% capture rate** |
 | **4** | Out-of-time profit | 4,966 / 10,769 oracle (46%) |
-| **4** | Constraint violations | 0 |
 | **5** | Fill rate (500 training rows) | 473/500 (**94.6%**) |
 | **5** | Total score (profit) | 453,574 |
 | **5** | Avg profit / day | 907.1 |
-| **5** | Speed | 4 ms/row |
 
 ## Problems & Approaches
 
