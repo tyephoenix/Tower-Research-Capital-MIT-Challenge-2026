@@ -31,4 +31,4 @@ for problem_dir in sorted(glob.glob("problem-*")):
 with open("limestone_data_challenge_2026.ipynb", "w") as f:
     nbformat.write(nb, f)
 
-print(f"Created problem_set.ipynb")
+print(f"Created limestone_data_challenge_2026.ipynb")
