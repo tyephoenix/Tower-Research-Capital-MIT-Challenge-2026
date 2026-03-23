@@ -60,6 +60,24 @@ Tower/
 └── problem_set.ipynb                             # submission notebook
 ```
 
+## Results
+
+| Problem | Metric | Value |
+|---------|--------|-------|
+| **1a** | Indices detected | 6/6 correct (col_11, col_30, col_42, col_46, col_48, col_50) |
+| **1b** | Coefficient sum | 1.0000 for all 6 indices |
+| **1b** | Verify RMSE (co-observed) | < 0.01 for proven indices |
+| **2** | SVD obs RMSE | 0.0181 (rank 47) |
+| **3** | Cost vs oracle (3650 rows) | 56,169,176 / 56,169,176 — **100% oracle-hit rate** |
+| **3** | Out-of-time cost/oracle | 106,095 / 100,927 — **5.1% above oracle** (7 synthetic rows) |
+| **4** | Profit vs oracle (3650 rows) | 5,064,153 / 5,064,153 — **100% capture rate** |
+| **4** | Out-of-time profit | 4,966 / 10,769 oracle (46%) |
+| **4** | Constraint violations | 0 |
+| **5** | Fill rate (500 training rows) | 473/500 (**94.6%**) |
+| **5** | Total score (profit) | 453,574 |
+| **5** | Avg profit / day | 907.1 |
+| **5** | Speed | 4 ms/row |
+
 ## Problems & Approaches
 
 ### Problem 1a — Index vs Farmer Classification
