@@ -1,13 +1,32 @@
 # Limestone Data Challenge 2026
 
+> Full problem statement: [`data/limestone_data_challenge_2026.pdf`](data/limestone_data_challenge_2026.pdf)
+
+![Problem Statement](data/challenge_pages.png)
+
 A 3650×53 price matrix with ~50% missing values. Six columns are "index" columns (convex combinations of "farmer" columns). The challenge: identify indices, recover coefficients, complete the matrix, and build trading strategies.
+
+### Challenge Overview
+
+You run a bakery buying flour from *m* farmers at varying daily prices, published in a newspaper bulletin. Some prices are smudged (NaN). The bulletin also includes *n* index columns — convex combinations of farmer prices — but column identities are unknown.
+
+| Problem | Task | Weight |
+|---------|------|--------|
+| 1a | Identify which columns are indices | 25% |
+| 1b | Recover index decomposition coefficients | 5% |
+| 2 | Fill all missing values in the matrix | 15% |
+| 3 | Buy 100kg from NaN columns, minimize cost | 15% |
+| 4 | Arbitrage: buy NaN, sell to index, maximize profit | 20% |
+| 5 | Limit orders on NaN columns with price + quantity | 20% |
 
 ## Project Structure
 
 ```
 Tower/
 ├── data/
-│   └── limestone_data_challenge_2026.data.csv   # raw input (3650 rows × 53 cols + time)
+│   ├── limestone_data_challenge_2026.data.csv   # raw input (3650 rows × 53 cols + time)
+│   ├── limestone_data_challenge_2026.pdf        # full problem statement
+│   └── challenge_pages.png                      # problem statement rendered as image
 ├── answers/                                      # generated outputs
 │   ├── problem1a_answer.csv                      # column classification (farmer vs index)
 │   ├── problem1b_answer.csv                      # index decomposition coefficients
