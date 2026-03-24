@@ -57,7 +57,7 @@ Tower/
 │   ├── compute_sigma.py                          # standalone σ computation (also available via pipeline)
 │   └── intermediates/
 │       └── sigma.json                            # precomputed per-column σ values
-├── compact.py                                    # notebook generator
+├── compact.py                                    # notebook generator (uses rep2nb)
 ├── limestone_data_challenge_2026.ipynb           # submission notebook (generated)
 └── requirements.txt                              # Python dependencies
 ```
@@ -206,10 +206,11 @@ cd ../problem-5 && python3 trade.py
 ### Generate submission notebook
 
 ```bash
+pip install rep2nb
 python3 compact.py
 ```
 
-Produces `limestone_data_challenge_2026.ipynb`.
+Produces `limestone_data_challenge_2026.ipynb` — a fully executable notebook with correct dependency ordering, `!pip install` cell, and section isolation. Powered by [rep2nb](https://github.com/tyephoenix/rep2nb).
 
 ## Key Dependencies
 
@@ -219,3 +220,16 @@ Produces `limestone_data_challenge_2026.ipynb`.
 | pandas | Data I/O, DataFrames |
 | scipy | NNLS, Lomb-Scargle, minimize_scalar, normal CDF |
 | torch | GPU-accelerated iterative SVD (falls back to CPU) |
+| rep2nb | Converts this repo into an executable notebook |
+
+---
+
+### Notebook Generation
+
+The submission notebook for this project was generated using [**rep2nb**](https://github.com/tyephoenix/rep2nb) — a tool I built that converts an entire Python repository into a single executable Jupyter notebook. It handles dependency ordering, cross-file imports, sections, argparse, and more.
+
+```bash
+pip install rep2nb
+```
+
+Check it out: [GitHub](https://github.com/tyephoenix/rep2nb) | [PyPI](https://pypi.org/project/rep2nb/)
