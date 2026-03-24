@@ -1,5 +1,7 @@
 # Limestone Data Challenge 2026
 
+**Team:** Tye Phoenix & Deven Pietrzak
+
 > Full problem statement: [`data/limestone_data_challenge_2026.pdf`](data/limestone_data_challenge_2026.pdf)
 
 ![Problem Statement](data/challenge_pages.png)
