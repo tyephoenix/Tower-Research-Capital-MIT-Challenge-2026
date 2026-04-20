@@ -4,8 +4,8 @@ Problem 5 pipeline — compute σ, build cache, run backtest.
 Without --intermediates: computes σ in memory, runs backtest directly.
 With --intermediates:    also saves intermediates/sigma.json to disk.
 
-Prerequisites: run problem-1_2/pipeline.py first (needs answers/ and
-               problem-1_2/intermediates/coefficients.json).
+Prerequisites: run problem-2/main.py first (needs answers/ and
+               problem-2/intermediates/coefficients.json).
 """
 
 import os, sys, json, time, argparse
@@ -19,7 +19,7 @@ from trade import (trading_problem_5, _load_decompositions, _topo_order,
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data",
                          "limestone_data_challenge_2026.data.csv")
 COMPLETED_PATH = os.path.join(os.path.dirname(__file__), "..", "answers",
-                              "problem2_answer.csv")
+                              "problem2_answer-tye.csv")
 
 KNN_K = 20
 PROJECTION_RANK = 12
@@ -148,7 +148,7 @@ def main():
 
     if not os.path.exists(COMPLETED_PATH):
         print(f"ERROR: {COMPLETED_PATH} not found. "
-              f"Run problem-1_2/pipeline.py first.")
+              f"Run problem-2/main.py first.")
         sys.exit(1)
 
     print(f"{'='*70}")

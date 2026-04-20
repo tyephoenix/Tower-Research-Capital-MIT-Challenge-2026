@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 DATA_PATH = "../data/limestone_data_challenge_2026.data.csv"
-COMPLETED_PATH = "../answers/problem2_answer.csv"
+COMPLETED_PATH = "../answers/problem2_answer-tye.csv"
 
 KNN_K = 20
 PROJECTION_RANK = 12

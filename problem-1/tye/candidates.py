@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from coefficients import fit_convex
+from tye.coefficients import fit_convex
 
 
 DEFAULT_MIN_ROWS = 30

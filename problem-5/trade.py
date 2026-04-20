@@ -2,7 +2,7 @@
 Problem 5 — Limit-order buying with optimal bid pricing.
 
 Single self-contained file. All data loaded from intermediates:
-  - Decompositions from problem-1_2/intermediates/coefficients.json
+  - Decompositions from problem-2/intermediates/coefficients.json
   - Sigma from problem-5/intermediates/sigma.json
   - Classification built on the fly from raw data + decompositions
 
@@ -20,11 +20,11 @@ _DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(_DIR, "..", "data",
                          "limestone_data_challenge_2026.data.csv")
 COMPLETED_PATH = os.path.join(_DIR, "..", "answers",
-                              "problem2_answer.csv")
-COEFF_JSON = os.path.join(_DIR, "..", "problem-1_2",
+                              "problem2_answer-tye.csv")
+COEFF_JSON = os.path.join(_DIR, "..", "problem-2",
                           "intermediates", "coefficients.json")
 ANSWER_1B = os.path.join(_DIR, "..", "answers",
-                         "problem1b_answer.csv")
+                         "problem1b_answer-tye.csv")
 SIGMA_JSON = os.path.join(_DIR, "intermediates", "sigma.json")
 
 MAX_HISTORICAL_T = 3649

@@ -119,7 +119,7 @@ def complete_matrix(arr, vmask, cols, decompositions,
               f"{len(decompositions)} index columns")
 
     if filled is None or fmask is None:
-        from coefficients import fill_from_known
+        from tye.coefficients import fill_from_known
         filled, fmask = fill_from_known(arr, vmask, decompositions, cols,
                                          verbose=verbose)
 
@@ -162,7 +162,9 @@ def save_matrix_result(decompositions, best_rank, final_rmse, rank_results,
 
 if __name__ == "__main__":
     import sys
-    from coefficients import load_coefficients
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "problem-1"))
+    from tye.coefficients import load_coefficients
 
     coef_path = "intermediates/coefficients.json"
     try:
@@ -188,8 +190,8 @@ if __name__ == "__main__":
     out = df.copy()
     for j, c in enumerate(cols):
         out[c] = completed[:, j]
-    out.to_csv("../answers/problem2_answer.csv", index=False)
-    print(f"  Saved ../answers/problem2_answer.csv")
+    out.to_csv("../answers/problem2_answer-tye.csv", index=False)
+    print(f"  Saved ../answers/problem2_answer-tye.csv")
 
     save_matrix_result(decompositions,
                        len(cols) - len(decompositions), obs_rmse,

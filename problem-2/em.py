@@ -6,6 +6,9 @@ Run coefficients.py first to generate intermediates/coefficients.json.
 """
 
 import os, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "problem-1"))
+
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -13,9 +16,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import time, argparse, json
 
-from coefficients import (load_coefficients, fill_from_known,
-                          reregress_on_completed, save_coefficients,
-                          distribute_through)
+from tye.coefficients import (load_coefficients, fill_from_known,
+                              reregress_on_completed, save_coefficients,
+                              distribute_through)
 from matrix import iterative_svd_complete
 
 

@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 
 DATA_PATH = "../data/limestone_data_challenge_2026.data.csv"
-COMPLETED_PATH = "../answers/problem2_answer.csv"
-ANSWER_1A = "../answers/problem1a_answer.csv"
-ANSWER_1B = "../answers/problem1b_answer.csv"
-COEFF_JSON = "../problem-1_2/intermediates/coefficients.json"
+COMPLETED_PATH = "../answers/problem2_answer-tye.csv"
+ANSWER_1A = "../answers/problem1a_answer-tye.csv"
+ANSWER_1B = "../answers/problem1b_answer-tye.csv"
+COEFF_JSON = "../problem-2/intermediates/coefficients.json"
 
 MAX_HISTORICAL_T = 3649
 KNN_K = 20

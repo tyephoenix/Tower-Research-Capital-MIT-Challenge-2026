@@ -607,7 +607,7 @@ def load_coefficients(path="intermediates/coefficients.json"):
 
 if __name__ == "__main__":
     import sys
-    from candidates import load_candidates
+    from tye.candidates import load_candidates
 
     cand_path = "intermediates/candidates.json"
     try:

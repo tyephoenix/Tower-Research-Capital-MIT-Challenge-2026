@@ -1,25 +1,41 @@
 """
-Full pipeline — runs everything from scratch.
-candidates → coefficients → SVD → EM → answers/
+Full pipeline — Problems 1 & 2 end-to-end.
 
-With --intermediates: also saves intermediates/ and analysis/ plots.
-Without: just answers, no plots, no extra IO.
+  --method tye   (default): candidates -> NNLS coefficients -> SVD -> EM -> answers
+  --method deven          : use Deven's KNOWN_DECOMPS_EXACT as starting decomps,
+                            then same trend + SVD + EM completion.
+
+Writes suffixed outputs:
+  ../answers/problem1a_answer-<method>.csv
+  ../answers/problem1b_answer-<method>.csv
+  ../answers/problem2_answer-<method>.csv
+
+With --intermediates: also saves intermediates/ + analysis/ plots.
 """
 
 import os
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+sys.path.insert(0, str(REPO / "problem-1"))
+
+import time
+import argparse
 import numpy as np
 import pandas as pd
-import time, argparse
 
-from candidates import (process_candidates, hardcoded_candidates,
-                        DEFAULT_MIN_ROWS, DEFAULT_N_SPLITS, DEFAULT_RMSE_THRESHOLD)
-from coefficients import (recover_coefficients, refit_weights,
-                          distribute_through)
+from tye.candidates import (process_candidates, hardcoded_candidates,
+                            DEFAULT_MIN_ROWS, DEFAULT_N_SPLITS,
+                            DEFAULT_RMSE_THRESHOLD)
+from tye.coefficients import (recover_coefficients, refit_weights,
+                              distribute_through)
 from matrix import iterative_svd_complete
 from trend import fit_all_columns, build_warm_start
 
 
-ANSWERS_DIR = "../answers"
+ANSWERS_DIR = str(REPO / "answers")
 EM_COEF_TOL = 1e-4
 
 
@@ -33,17 +49,55 @@ def verify_rmse(idx_col, cols, decompositions, data):
     return float(np.sqrt(np.mean((pred - valid[idx_col].values) ** 2)))
 
 
+def build_deven_decompositions(cols):
+    """Construct the same decompositions dict from Deven's hardcoded constants."""
+    from deven.common import KNOWN_DECOMPS_EXACT, CONFIRMED_INDICES
+
+    # Take one canonical decomp per index column. For col_50/col_11 (multiple
+    # entries), pick the first farmer-only form.
+    seen = set()
+    chosen = []
+    for idx_col, weights in KNOWN_DECOMPS_EXACT:
+        if idx_col in seen:
+            continue
+        if all(f not in CONFIRMED_INDICES for f in weights):
+            chosen.append((idx_col, weights))
+            seen.add(idx_col)
+    # Add any missing indices (first occurrence)
+    for idx_col, weights in KNOWN_DECOMPS_EXACT:
+        if idx_col not in seen:
+            chosen.append((idx_col, weights))
+            seen.add(idx_col)
+
+    decompositions = {}
+    proven_set = {"col_42", "col_48", "col_11", "col_50"}
+    for idx_col, weights in chosen:
+        farmer_names = list(weights.keys())
+        farmer_idxs = [cols.index(c) for c in farmer_names]
+        coefs = np.array([weights[c] for c in farmer_names], dtype=float)
+        decompositions[idx_col] = {
+            "method": "deven_hardcoded",
+            "farmer_idxs": farmer_idxs,
+            "coefs": coefs,
+            "proven": idx_col in proven_set,
+        }
+    return decompositions, sorted(CONFIRMED_INDICES)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Limestone — full pipeline")
+    parser = argparse.ArgumentParser(description="Limestone — Problems 1 & 2 pipeline")
+    parser.add_argument("--method", choices=["tye", "deven"], default="tye",
+                        help="P1 detection method (default: tye)")
     parser.add_argument("--min-rows", type=int, default=DEFAULT_MIN_ROWS)
     parser.add_argument("--threshold", type=float, default=DEFAULT_RMSE_THRESHOLD)
     parser.add_argument("--em-iters", type=int, default=10)
     parser.add_argument("--intermediates", action="store_true",
                         help="Save intermediates + analysis plots")
     parser.add_argument("--candidates", type=int, nargs="+", default=None,
-                        help="Hardcode candidates by col number")
+                        help="(tye only) Hardcode candidates by col number")
     args = parser.parse_args()
 
+    suffix = f"-{args.method}"
     os.makedirs(ANSWERS_DIR, exist_ok=True)
     if args.intermediates:
         os.makedirs("intermediates", exist_ok=True)
@@ -52,92 +106,111 @@ def main():
     t_start = time.time()
     np.random.seed(42)
 
-    df = pd.read_csv("../data/limestone_data_challenge_2026.data.csv")
+    df = pd.read_csv(REPO / "data" / "limestone_data_challenge_2026.data.csv")
     cols = [c for c in df.columns if c.startswith("col_")]
     data = df[cols].copy()
     T, D = data.shape
+    print(f"Method: {args.method}")
     print(f"Data: {T}x{D}, NaN rate: {data.isna().mean().mean():.3f}")
 
     arr = data.values.astype(np.float64)
     vmask = ~np.isnan(arr)
 
-    # ── Phase 1: candidates ───────────────────────────────────────────────
-    if args.candidates:
-        result = hardcoded_candidates(cols, args.candidates)
-    else:
-        result = process_candidates(
-            arr, vmask, cols,
-            min_rows=args.min_rows, n_splits=DEFAULT_N_SPLITS,
-            rmse_threshold=args.threshold,
+    # ── Phase 1: detection + coefficients ────────────────────────────────
+    if args.method == "tye":
+        if args.candidates:
+            result = hardcoded_candidates(cols, args.candidates)
+        else:
+            result = process_candidates(
+                arr, vmask, cols,
+                min_rows=args.min_rows, n_splits=DEFAULT_N_SPLITS,
+                rmse_threshold=args.threshold,
+            )
+
+        if args.intermediates:
+            from candidates import (save_candidates, plot_residual_ranking,
+                                    plot_residual_gaps, print_data_availability)
+            save_candidates(result)
+            if result["residual_data"]:
+                plot_residual_ranking(result["residual_data"],
+                                      result["rmse_threshold"])
+                plot_residual_gaps(result["residual_data"],
+                                   result["rmse_threshold"])
+                print_data_availability(arr, vmask, cols, result["residual_data"])
+
+        decompositions, filled, fmask = recover_coefficients(
+            data, arr, vmask, cols,
+            result["index_cols"], result["index_idxs"],
+            result["farmer_cols"], result["farmer_idxs"],
         )
 
-    if args.intermediates:
-        from candidates import (save_candidates, plot_residual_ranking,
-                                plot_residual_gaps, print_data_availability)
-        save_candidates(result)
-        if result["residual_data"]:
-            plot_residual_ranking(result["residual_data"],
-                                 result["rmse_threshold"])
-            plot_residual_gaps(result["residual_data"],
-                               result["rmse_threshold"])
-            print_data_availability(arr, vmask, cols, result["residual_data"])
+    else:  # deven
+        decompositions, index_cols_d = build_deven_decompositions(cols)
+        print(f"\n  Deven method: loaded {len(decompositions)} hardcoded decompositions")
 
-    # ── Phase 2: coefficient recovery ─────────────────────────────────────
-    decompositions, filled, fmask = recover_coefficients(
-        data, arr, vmask, cols,
-        result["index_cols"], result["index_idxs"],
-        result["farmer_cols"], result["farmer_idxs"],
-    )
+        # Build filled + fmask by applying Deven's decomps where possible.
+        filled = arr.copy()
+        fmask = vmask.copy()
+        # Simple propagation: fill missing index from farmers; fill missing farmer if only one missing.
+        changed = True
+        while changed:
+            changed = False
+            for c, dec in decompositions.items():
+                idx_i = cols.index(c)
+                fis = dec["farmer_idxs"]
+                coefs = dec["coefs"]
+                for t in range(T):
+                    if not fmask[t, idx_i] and all(fmask[t, fi] for fi in fis):
+                        filled[t, idx_i] = sum(coefs[k] * filled[t, fis[k]]
+                                               for k in range(len(fis)))
+                        fmask[t, idx_i] = True
+                        changed = True
+                    elif fmask[t, idx_i]:
+                        missing = [k for k, fi in enumerate(fis) if not fmask[t, fi]]
+                        if len(missing) == 1 and abs(coefs[missing[0]]) > 1e-12:
+                            k = missing[0]
+                            other = sum(coefs[j] * filled[t, fis[j]]
+                                        for j in range(len(fis)) if j != k)
+                            filled[t, fis[k]] = (filled[t, idx_i] - other) / coefs[k]
+                            fmask[t, fis[k]] = True
+                            changed = True
 
     # Update index/farmer lists based on what was actually accepted
     accepted_cols = list(decompositions.keys())
     accepted_idxs = [cols.index(c) for c in accepted_cols]
-    reclassified = [c for c in result["index_cols"] if c not in decompositions]
-
     farmer_idx_set = set(range(D)) - set(accepted_idxs)
     farmer_idxs = sorted(farmer_idx_set)
     farmer_cols = [cols[i] for i in farmer_idxs]
     n_farmers = len(farmer_idxs)
 
     print(f"\n  Final classification: {len(accepted_cols)} indices, {n_farmers} farmers")
-    if reclassified:
-        print(f"  Reclassified as farmers: {reclassified}")
 
-    # Classify as proven vs uncertain
-    proven = []
-    uncertain = []
-    for c in accepted_cols:
-        if decompositions[c].get("proven", False):
-            proven.append(c)
-        else:
-            uncertain.append(c)
+    proven = [c for c in accepted_cols if decompositions[c].get("proven", False)]
+    uncertain = [c for c in accepted_cols if not decompositions[c].get("proven", False)]
     print(f"  Proven: {proven}")
     print(f"  Uncertain (EM needed): {uncertain}")
 
-    if args.intermediates:
+    if args.intermediates and args.method == "tye":
         from coefficients import save_coefficients
         save_coefficients(decompositions, accepted_cols, accepted_idxs,
                           farmer_cols, farmer_idxs, cols)
 
-    # ── Phase 2.5: fit trend model per column for warm start ────────────
+    # ── Phase 2.5: trend warm start ────────────────────────────────────
     t_all = df["time"].values
     print("\n  Fitting triangle-wave trend model per column...")
     trend_fits = fit_all_columns(arr, vmask, t_all, cols, verbose=True)
-
     trend_warm = build_warm_start(arr, vmask, t_all, cols, trend_fits)
 
-    # Merge: keep coefficient-filled values where available, else use trend
     warm = filled.copy()
     still_nan = np.isnan(warm)
     warm[still_nan] = trend_warm[still_nan]
-    warm_mask = fmask | still_nan  # everything is now filled
+    warm_mask = fmask | still_nan
 
-    # ── Phase 3: SVD completion ───────────────────────────────────────────
+    # ── Phase 3: SVD completion ───────────────────────────────────────
     best_rank = n_farmers
     obs_filled = fmask.sum() / fmask.size
     print(f"\n  SVD completion at rank={best_rank} ({n_farmers} farmers), "
-          f"warm start from coeff fill ({obs_filled:.1%} observed) "
-          f"+ trend model...")
+          f"warm start from coeff fill ({obs_filled:.1%} observed) + trend...")
 
     completed, obs_rmse = iterative_svd_complete(
         arr, vmask, best_rank, warm_start=warm)
@@ -147,7 +220,7 @@ def main():
         from matrix import save_matrix_result
         save_matrix_result(decompositions, best_rank, obs_rmse, [], cols)
 
-    # ── Phase 4: EM loop ──────────────────────────────────────────────────
+    # ── Phase 4: EM loop ──────────────────────────────────────────────
     em_history = {c: [verify_rmse(c, cols, decompositions, data)]
                   for c in accepted_cols} if args.intermediates else None
     em_svd_rmse = [] if args.intermediates else None
@@ -198,7 +271,6 @@ def main():
                     em_history[c].append(
                         verify_rmse(c, cols, decompositions, data))
 
-            # Reconstruct index columns, then re-SVD
             working = completed.copy()
             for c in accepted_cols:
                 idx_i = cols.index(c)
@@ -249,7 +321,7 @@ def main():
             axes[0].plot(iters, em_history[c][1:], "o-", label=c,
                          linewidth=2, markersize=6)
         axes[0].set_ylabel("Verify RMSE")
-        axes[0].set_title("EM Convergence")
+        axes[0].set_title(f"EM Convergence ({args.method})")
         axes[0].legend()
         axes[0].grid(True, alpha=0.3)
 
@@ -261,24 +333,24 @@ def main():
         axes[2].plot(iters, em_deltas, "^-", color="#FF5722",
                      linewidth=2, markersize=6)
         axes[2].axhline(y=EM_COEF_TOL, color="red", linestyle="--",
-                         alpha=0.7, label=f"tol={EM_COEF_TOL}")
+                        alpha=0.7, label=f"tol={EM_COEF_TOL}")
         axes[2].set_ylabel("Max Coef Delta")
         axes[2].set_xlabel("EM Iteration")
         axes[2].legend()
         axes[2].grid(True, alpha=0.3)
 
         plt.tight_layout()
-        plt.savefig("analysis/em_convergence.png", dpi=150)
+        plt.savefig(f"analysis/em_convergence{suffix}.png", dpi=150)
         plt.close()
-        print(f"  Saved analysis/em_convergence.png")
+        print(f"  Saved analysis/em_convergence{suffix}.png")
 
-    if args.intermediates:
+    if args.intermediates and args.method == "tye":
         from coefficients import save_coefficients as _sc
         _sc(decompositions, accepted_cols, accepted_idxs,
             farmer_cols, farmer_idxs, cols,
             path="intermediates/em_coefficients.json")
 
-    # ── Final reconstruction ──────────────────────────────────────────────
+    # ── Final reconstruction ──────────────────────────────────────────
     for c in accepted_cols:
         idx_i = cols.index(c)
         dec = decompositions[c]
@@ -286,21 +358,18 @@ def main():
                                @ dec["coefs"])
     completed[vmask] = arr[vmask]
 
-    # ── Distribute through for problem 1b ─────────────────────────────────
     expanded = distribute_through(decompositions, cols)
 
-    # ── Save answers ──────────────────────────────────────────────────────
-    p1a = os.path.join(ANSWERS_DIR, "problem1a_answer.csv")
-    p1b = os.path.join(ANSWERS_DIR, "problem1b_answer.csv")
-    p2 = os.path.join(ANSWERS_DIR, "problem2_answer.csv")
+    # ── Save answers ──────────────────────────────────────────────────
+    p1a = os.path.join(ANSWERS_DIR, f"problem1a_answer{suffix}.csv")
+    p1b = os.path.join(ANSWERS_DIR, f"problem1b_answer{suffix}.csv")
+    p2 = os.path.join(ANSWERS_DIR, f"problem2_answer{suffix}.csv")
 
-    # Problem 1a: which columns are indices
     pd.DataFrame({
         "column": farmer_cols + accepted_cols,
         "is_index": [False] * n_farmers + [True] * len(accepted_cols),
     }).to_csv(p1a, index=False)
 
-    # Problem 1b: coefficient matrix (distributed to pure farmers)
     rows_1b = []
     for idx_col in accepted_cols:
         if idx_col in expanded:
@@ -323,7 +392,6 @@ def main():
                     })
     pd.DataFrame(rows_1b).to_csv(p1b, index=False)
 
-    # Problem 2: completed matrix
     out = df.copy()
     for j, c in enumerate(cols):
         out[c] = completed[:, j]
