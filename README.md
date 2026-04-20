@@ -45,11 +45,24 @@ Tower/
 │   │   ├── coefficients.json                     # raw decomposition weights (pre-EM)
 │   │   ├── em_coefficients.json                  # refined decomposition weights (post-EM)
 │   │   └── matrix.json                           # SVD rank sweep results + best rank
-│   └── analysis/                                 # diagnostic plots
-│       ├── residuals.png                         # bar chart: all columns ranked by convex-fit RMSE
-│       ├── gaps.png                              # sorted RMSE + gap ratios between consecutive columns
-│       ├── em_convergence.png                    # EM loop: verify RMSE, SVD RMSE, coef delta per iteration
-│       └── trend_fits.png                        # per-column periodic trend fits vs observed data
+│   ├── analysis/                                 # diagnostic plots
+│   │   ├── residuals.png                         # bar chart: all columns ranked by convex-fit RMSE
+│   │   ├── gaps.png                              # sorted RMSE + gap ratios between consecutive columns
+│   │   ├── em_convergence.png                    # EM loop: verify RMSE, SVD RMSE, coef delta per iteration
+│   │   └── trend_fits.png                        # per-column periodic trend fits vs observed data
+│   └── iterative_simplex_regression/             # alternative approach: stepwise simplex-constrained regression + constraint propagation
+│       ├── scripts/
+│       │   ├── 01_validate_known_decomps.py      # validate exact index decompositions on original data
+│       │   ├── 02_stability_validation.py        # subsample-based stability test on candidate predictor sets
+│       │   ├── 03_farmer_only_stepwise.py        # forward stepwise search restricted to farmer-only predictor pool
+│       │   ├── 04_fill_and_rerun.py              # fill from exact + approximate decomps, re-solve col_30/col_46, rerun stepwise
+│       │   ├── 05_exact_fill_all.py              # fill from all exact decomps, full stepwise, write filled_matrix.csv
+│       │   ├── 06_refine_col30_col46.py          # equality-constrained convex fits (SLSQP) for col_30 and col_46
+│       │   ├── 07_classify_remaining.py          # classify remaining columns vs known farmers (index/uncertain/farmer)
+│       │   ├── common.py                         # shared utilities: convex NNLS fit, stepwise loop, constraint-fill
+│       │   └── run_all.sh                        # pipeline orchestrator (runs 01 → 07 in order)
+│       ├── results/SUMMARY.md                    # final index set, coefficients, classification rationale
+│       └── requirements.txt
 ├── problem-3_4/                                  # buying + arbitrage strategies
 │   ├── buy.py                                    # trading_problem_3: buy 100kg cheapest
 │   └── trade.py                                  # trading_problem_4: arbitrage
